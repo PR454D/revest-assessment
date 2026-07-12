@@ -1,0 +1,20 @@
+{
+  "name": "revest-assessment",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"bun run dev:product\" \"bun run dev:order\" \"bun run dev:client\"",
+    "test": "concurrently \"bun run test:product\" \"bun run test:order\"",
+    "dev:product": "cd backend/product && bun run start:dev",
+    "dev:order": "cd backend/order && bun run start:dev",
+    "dev:client": "cd client && bun run dev",
+    "test:product": "cd backend/product && bun run test",
+    "test:order": "cd backend/order && bun run test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
