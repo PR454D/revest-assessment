@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { OrderService, PRODUCT_SERVICE } from './order.service';
+import { HttpModule } from '@nestjs/axios';
+import { OrderService } from './order.service';
 import { OrderController } from './order.controller';
 import { Order } from './entities/order.entity';
 
@@ -14,21 +14,11 @@ import { Order } from './entities/order.entity';
       synchronize: true,
     }),
     TypeOrmModule.forFeature([Order]),
+    HttpModule.register({
+      baseURL: process.env.PRODUCT_SERVICE_URL || 'http://localhost:3001',
+    }),
   ],
-  providers: [
-    OrderService,
-    {
-      provide: PRODUCT_SERVICE,
-      useFactory: () =>
-        ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: '0.0.0.0',
-            port: 4001,
-          },
-        }),
-    },
-  ],
+  providers: [OrderService],
   controllers: [OrderController],
 })
 export class OrderModule {}

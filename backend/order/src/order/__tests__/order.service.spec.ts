@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ClientProxy } from '@nestjs/microservices';
-import { OrderService, PRODUCT_SERVICE } from '../order.service';
+import { HttpService } from '@nestjs/axios';
+import { OrderService } from '../order.service';
 import { Order } from '../entities/order.entity';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { of } from 'rxjs';
@@ -17,14 +17,15 @@ const createMockRepository = <T = any>(): MockRepository<T> => ({
   remove: jest.fn(),
 });
 
-const createMockClientProxy = (): Partial<ClientProxy> => ({
-  send: jest.fn(),
+const createMockHttpService = (): Partial<HttpService> => ({
+  post: jest.fn(),
+  get: jest.fn(),
 });
 
 describe('OrderService', () => {
   let service: OrderService;
   let repository: MockRepository<Order>;
-  let productClient: Partial<ClientProxy>;
+  let httpService: Partial<HttpService>;
 
   const mockOrder: Order = {
     id: 1,
@@ -35,7 +36,7 @@ describe('OrderService', () => {
   };
 
   beforeEach(async () => {
-    productClient = createMockClientProxy();
+    httpService = createMockHttpService();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,8 +46,8 @@ describe('OrderService', () => {
           useValue: createMockRepository(),
         },
         {
-          provide: PRODUCT_SERVICE,
-          useValue: productClient,
+          provide: HttpService,
+          useValue: httpService,
         },
       ],
     }).compile();
@@ -102,9 +103,9 @@ describe('OrderService', () => {
         totalAmount: 59.98,
       };
 
-      (productClient.send as jest.Mock)
-        .mockReturnValueOnce(of({ available: true }))
-        .mockReturnValueOnce(of({ id: 1, stock: 8 }));
+      (httpService.post as jest.Mock)
+        .mockReturnValueOnce(of({ data: { available: true } }))
+        .mockReturnValueOnce(of({ data: { id: 1, stock: 8 } }));
 
       repository.create!.mockReturnValue(mockOrder);
       repository.save!.mockResolvedValue(mockOrder);
@@ -112,11 +113,11 @@ describe('OrderService', () => {
       const result = await service.create(createDto);
 
       expect(result).toEqual(mockOrder);
-      expect(productClient.send).toHaveBeenCalledWith('validate_stock', {
+      expect(httpService.post).toHaveBeenCalledWith('/products/validate-stock', {
         productId: 1,
         quantity: 2,
       });
-      expect(productClient.send).toHaveBeenCalledWith('update_stock', {
+      expect(httpService.post).toHaveBeenCalledWith('/products/update-stock', {
         productId: 1,
         quantity: 2,
       });
@@ -128,8 +129,8 @@ describe('OrderService', () => {
         totalAmount: 2999,
       };
 
-      (productClient.send as jest.Mock).mockReturnValueOnce(
-        of({ available: false }),
+      (httpService.post as jest.Mock).mockReturnValueOnce(
+        of({ data: { available: false } }),
       );
 
       await expect(service.create(createDto)).rejects.toThrow(
@@ -177,16 +178,6 @@ describe('OrderService', () => {
       repository.findOne!.mockResolvedValue(null);
 
       await expect(service.remove(999)).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('TCP: getOrder', () => {
-    it('should return order via TCP pattern', async () => {
-      repository.findOne!.mockResolvedValue(mockOrder);
-
-      const result = await service.getOrder(1);
-
-      expect(result).toEqual(mockOrder);
     });
   });
 });

@@ -44,4 +44,18 @@ export class ProductController {
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.productService.remove(id);
   }
+
+  @Post('validate-stock')
+  validateStock(
+    @Body() body: { productId: number; quantity: number },
+  ): Promise<{ available: boolean }> {
+    return this.productService.validateStock(body);
+  }
+
+  @Post('update-stock')
+  updateStock(
+    @Body() body: { productId: number; quantity: number },
+  ): Promise<Product> {
+    return this.productService.updateStock(body);
+  }
 }
