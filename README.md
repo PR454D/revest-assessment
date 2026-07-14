@@ -6,7 +6,7 @@ A full-stack assessment app with NestJS product/order microservices, SQLite data
 
 ```bash
 # Install dependencies
-bun install
+bun install # in all projects, (backend/product, backend/order, client)
 
 # Run all services (product, order, client)
 bun run dev
